@@ -1,40 +1,37 @@
 #version 400
-
-//in
+//vectors
 in vec3 position;
 in vec3 normals;
 in vec2 texCoords;
+in vec3 indices;
 
-//out
-out vec3 color;
-out vec2 outTexCoords;
+out vec4 inColor;
+out vec3 pos;
 out vec3 outNormals;
+out vec2 outTexCoords;
 out vec3 vecToLight;
 out vec3 vecToCamera;
-out vec3 rgb;
 
 //uniforms
-uniform vec3 setColor;
-uniform vec3 ambientC;
-uniform mat4 transformationMatrix;
+uniform mat4 modelMatrix;
 uniform mat4 projectionMatrix;
 uniform mat4 viewMatrix;
 
-//locals
-
+uniform vec3 lightPos=vec3(0.,5.,0.);
 
 void main(){
-
-    vec4 worldPosition = transformationMatrix*vec4(position.xyz, 1.0);
-    vec3 lightpos=vec3(0.0, 0.0, 10.0);
-    //gl_Position = vec4(position, 1.0);
-    vec3 normal = (transformationMatrix*vec4(normals, 0.0)).xyz;
-    vecToLight = lightpos - worldPosition.xyz;
-    vecToCamera = (inverse(viewMatrix)*vec4(0.0, 0.0, 0.0, 1.0)).xyz - worldPosition.xyz;
-    outNormals = normal;
-    color = setColor;
-    outTexCoords = texCoords;
+    vec4 worldPosition=modelMatrix*vec4(position,1.);
+    vec3 viewPos=(inverse(viewMatrix)*vec4(0.,0.,0.,1.)).xyz;
+    vec3 normal=normalize((modelMatrix*vec4(normals,0.)).xyz);
     
-    gl_Position=projectionMatrix*viewMatrix*worldPosition;
-    rgb = gl_Position.xyz;
+    vecToLight=normalize(lightPos-worldPosition.xyz);
+    vecToCamera=normalize(viewPos-worldPosition.xyz);
+    
+    vec4 finalMatrix=projectionMatrix*viewMatrix*worldPosition;
+    
+    gl_Position=finalMatrix;
+    
+    pos=finalMatrix.xyz;
+    outNormals=normal;
+    outTexCoords=texCoords;
 }

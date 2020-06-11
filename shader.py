@@ -1,65 +1,92 @@
 import os
-
 from abc import ABC
 from abc import abstractmethod
-
 from OpenGL.GL import *
 from OpenGL.GL.shaders import *
 import glm
+import numpy as np
+
 
 class Shader(ABC):
 
-    def __init__(self):
-        self.shaderVertex = compileShader(self.loadShader('vertex'), GL_VERTEX_SHADER)
-        self.shaderFragment = compileShader(self.loadShader('fragment'), GL_FRAGMENT_SHADER)
-        self.shaderProgram = compileProgram(self.shaderVertex, self.shaderFragment)
-        #self.getAllUniformLocations()
+    def __init__(self, frag='fragment', vert='vertex'):
+        self._default_frag = frag
+        self._default_vert = vert
+        self.shaderVertex = compileShader(
+            self.loadShader(self._default_vert, stype='vert'), GL_VERTEX_SHADER)
+        self.shaderFragment = compileShader(
+            self.loadShader(self._default_frag, stype='frag'), GL_FRAGMENT_SHADER)
+        self.shaderProgram = compileProgram(
+            self.shaderVertex, self.shaderFragment)
+        # self.getAllUniformLocations()
         self.uniformLocations = []
 
     def start(self):
         for l in self.uniformLocations:
             glVertexAttribPointer(l, 3, GL_FLOAT, GL_FALSE, 0, None)
             glEnableVertexAttribArray(l)
-        
-        
         glUseProgram(self.shaderProgram)
-        self.location_color = glGetUniformLocation(self.shaderProgram, 'setColor')
-        
+
+    def attach(self):
+        glUseProgram(self.shaderProgram)
+
+    def detach(self):
+        glUseProgram(0)
 
     def stop(self):
         glUseProgram(0)
         glDeleteShader(self.shaderVertex)
         glDeleteShader(self.shaderFragment)
-        
 
-    def loadShader(self, name):
-        read = open(os.getcwd()+'\\shaderfiles\\'+name+'.'+name[0:4], 'r')
+    def loadShader(self, name, stype=''):
+        read = open(os.getcwd()+'\\shaderfiles\\'+name+'.'+stype, 'r')
         return read.read()
 
+    def updateShader(self, newshaderfile, stype=GL_FRAGMENT_SHADER):
+        glAttachShader(self.shaderProgram, compileShader(
+            self.loadShader(newshaderfile, stype='frag'), stype))
+
     def getAllUniformLocations(self):
-        self.location_color = glGetAttribLocation(self.shaderProgram, 'setColor')
-        
+        self.location_color = glGetAttribLocation(
+            self.shaderProgram, 'setColor')
 
     def getUniformLocationOfVariable(self, name):
-        self.uniformLocations.append(glGetUniformLocation(self.shaderProgram, name))
-        
-    
-    def kindOfDataStoredInPosition(self, position, NumberOfPoints):
-        glVertexAttribPointer(position, NumberOfPoints, GL_FLOAT, GL_FALSE, 0, None)
+        loc = glGetUniformLocation(self.shaderProgram, name)
+        self.uniformLocations.append(loc)
+        return loc
 
-    def putVec3InUniformLocation(self, location, vec3data):
+    def kindOfDataStoredInPosition(self, position, NumberOfPoints):
+        glVertexAttribPointer(position, NumberOfPoints,
+                              GL_FLOAT, GL_FALSE, 0, None)
+
+    def putSingleValueAt(self, location, value, dtype='f'):
         loc = glGetUniformLocation(self.shaderProgram, location)
-        glUniform3f(loc, vec3data[0], vec3data[1], vec3data[2])
+        eval(f'glUniform1{dtype}')(loc, value)
+
+    def putDataInUniformLocation(self, location, data, dtype='f'):
+        loc = glGetUniformLocation(self.shaderProgram, location)
+        if dtype == 'f':
+            if type(data) in [np.float32, float]:
+                eval(f'glUniform1f')(loc, data)
+            else:
+                dl = len(data)
+                eval(f'glUniform{dl}f')(loc, *data)
+        else:
+            glUniform1i(loc, data)
 
     def loadViewMatrix(self, matrix_view):
-        self.location_viewMatrix = glGetUniformLocation(self.shaderProgram, 'viewMatrix')
+        self.location_viewMatrix = glGetUniformLocation(
+            self.shaderProgram, 'viewMatrix')
         glUniformMatrix4fv(self.location_viewMatrix, 1, GL_FALSE, matrix_view)
 
     def loadTransformationMatrix(self, matrix_transformation):
-        self.location_transformationMatrix = glGetUniformLocation(self.shaderProgram, 'transformationMatrix')
-        glUniformMatrix4fv(self.location_transformationMatrix, 1, GL_FALSE, matrix_transformation)
+        self.location_transformationMatrix = glGetUniformLocation(
+            self.shaderProgram, 'modelMatrix')
+        glUniformMatrix4fv(self.location_transformationMatrix,
+                           1, GL_FALSE, matrix_transformation)
 
     def loadProjectionMatrix(self, matrix_projection):
-        self.location_projectionMatrix = glGetUniformLocation(self.shaderProgram, 'projectionMatrix')
-        glUniformMatrix4fv(self.location_projectionMatrix, 1, GL_FALSE, matrix_projection)
-        
+        self.location_projectionMatrix = glGetUniformLocation(
+            self.shaderProgram, 'projectionMatrix')
+        glUniformMatrix4fv(self.location_projectionMatrix,
+                           1, GL_FALSE, matrix_projection)

@@ -1,12 +1,34 @@
+import cv2
 from glfw.GLFW import *
 from OpenGL.GL import *
+from PIL import Image
+
 from model.loader import *
 from model.model import *
 from shader import *
-from tool.mmath import *
 from tool.gui import *
-import cv2
-from PIL import Image
+from tool.mmath import *
+from tool.color import *
+
+shaderProp = {
+    'renderprop': DProp({
+        'isvisible': True,
+        'img': 0,
+        'gamma': 1.0
+    }),
+    'lightprop': DProp({
+        'isvisible': True,
+        'mode': ['blinn', 'phong'],
+        'shininess': 16.0,
+        'specDamp': 5.0,
+        'lightcolor': Color3(1.0, 1.0, 1.0),
+        'ambientcolor': Color3(1.0, 1.0, 1.0)
+    }),
+    'kernelprop': DProp({
+        'isvisible': True,
+        'row': [[0.0]*3]*3
+    })
+}
 
 data = [
     1.0,  1.0, 1.0,  # 0 Bottom Left
@@ -33,10 +55,6 @@ data = np.array(data, dtype=np.float32)
 indices = np.array(indices, dtype=np.int32)
 texcord = np.array(texcord, dtype=np.float32)
 
-shaderProp = {
-    'damp': 10,
-}
-
 loader = Loader()
 cv = cv2.VideoCapture(0)
 
@@ -55,7 +73,7 @@ class Renderer:
         self.framebuffer_attachment = glGenTextures(1)
         self.initFrameBuffer()
         self.viewer = impl
-        self.viewer.newframe(self.framebuffer_attachment)
+        self.viewer.gengui(shaderProp)
 
     def initFrameBuffer(self):
         # binding frame buffer
@@ -108,6 +126,16 @@ class Renderer:
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_BLEND)
         glCullFace(GL_BACK)
+        print(
+            f'frame_shader => {self.scene_shader.shaderProgram}, scene_shader => {self.shader.shaderProgram}')
+        self.viewer.giveshader(
+            DProp({
+                'frame_shader': self.scene_shader,
+                'scene_shader': self.shader
+            })
+        )
+        print('framebf = > ', self.framebuffer_attachment)
+        self.viewer.newframe(self.framebuffer_attachment)
 
     def assignCamToTex(self, texid):
         ret, frame = cv.read()
@@ -121,11 +149,13 @@ class Renderer:
 
     def processinput(self):
         if glfwGetKey(self.window, eval('GLFW_KEY_UP')) == GLFW_PRESS:
-            shaderProp['damp'] += 1
-            self.shader.putSingleValueAt('damp', shaderProp['damp'])
+            shaderProp['lightprop'].specDamp += 1
+            self.shader.putSingleValueAt(
+                'damp', shaderProp['lightprop'].specDamp)
         if glfwGetKey(self.window, GLFW_KEY_DOWN) == GLFW_PRESS:
-            shaderProp['damp'] -= 1
-            self.shader.putSingleValueAt('damp', shaderProp['damp'])
+            shaderProp['lightprop'].specDamp -= 1
+            self.shader.putSingleValueAt(
+                'damp', shaderProp['lightprop'].specDamp)
 
     def renderframe(self):
         glEnable(GL_CULL_FACE)
@@ -136,7 +166,7 @@ class Renderer:
         glClearColor(*self.bgcolor)
         self.processinput()
         for entity in self.entities:
-            self.shader.putDataInUniformLocation('color', entity.model.color)
+            self.shader.putDataInUniformLocation('time', glfwGetTime())
             view = self.camera.createViewMatrix()
             self.shader.loadViewMatrix(glm.value_ptr(view))
             self.camera.movement()
@@ -178,12 +208,6 @@ class Renderer:
         glDisable(GL_CULL_FACE)
         self.scene_shader.attach()
         self.scene.bind()
-        # for i in range(len(GUI_STATE.kernelprop.data)):
-        #     self.scene_shader.putDataInUniformLocation(
-        #         f'kernel[{i}]', eval(f'GUI_STATE.kernelprop.data[{i}]'))
-
-        self.scene_shader.putDataInUniformLocation(
-            'gamma', [GUI_STATE.renderprop.gamma])
         glDisable(GL_DEPTH_TEST)
         glDrawElements(
             GL_TRIANGLES, self.scene.i_count(),

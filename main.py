@@ -40,12 +40,10 @@ def main():
     camera = Camera(window, glm.vec3(0.0, 0.0, 3.0), 75, 0.1, 1000, 0.5)
     renderer = Renderer(camera, window, impl)
     loader = Loader()
-    color = '#F24405'
     entities = [
         Entity(
             'plane',
-            loader.loadModel(OBJ('plane.obj').loadObj(),
-                             Color(115, 133, 140)),
+            loader.loadModel(OBJ('plane.obj').loadObj(), Color(115, 133, 140)),
             glm.vec3(0.0, -1.0, 0.0),
             glm.vec3(0.0, 0.0, 0.0),
             glm.vec3(1.0, 1.0, 1.0),

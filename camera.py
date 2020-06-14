@@ -57,8 +57,7 @@ class Camera:
         self.counter = 0
         self.i = 0
         self.cursor_show = True
-        glfwSetInputMode(self.window, GLFW_CURSOR,
-                         GLFW_CURSOR_DISABLED)
+        # glfwSetInputMode(self.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED)
 
     def setwindowsize(self, window, w, h):
         self.screenwidth = w
@@ -90,6 +89,7 @@ class Camera:
             self.lastX = x
             self.lastY = y
             self.firstmouse = False
+
         xOff = x - self.lastX
         yOff = self.lastY - y
         self.lastX = x
@@ -97,23 +97,26 @@ class Camera:
         xOff *= self.sensitivity
         yOff *= self.sensitivity
 
-        self.yaw += xOff
-        self.pitch += yOff
+        if glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS:
 
-        if self.pitch > 89:
-            self.pitch = 89
-        if self.pitch < -89:
-            self.pitch = -89
+            self.yaw += xOff
+            self.pitch += yOff
 
-        direction = glm.vec3(0.0, 0.0, 0.0)
-        direction.x = cos(radians(self.yaw)) * cos(radians(self.pitch))
-        direction.y = sin(radians(self.pitch))
-        direction.z = sin(radians(self.yaw)) * cos(radians(self.pitch))
-        self.cameraFront = glm.normalize(direction)
-        self.cameraRight = glm.normalize(
-            glm.cross(self.cameraFront, glm.vec3(0.0, 1.0, 0.0)))
-        self.cameraUp = glm.normalize(
-            glm.cross(self.cameraRight, self.cameraFront))
+            if self.pitch > 89:
+                self.pitch = 89
+            if self.pitch < -89:
+                self.pitch = -89
+
+            direction = glm.vec3(0.0, 0.0, 0.0)
+            direction.x = cos(radians(self.yaw)) * cos(radians(self.pitch))
+            direction.y = sin(radians(self.pitch))
+            direction.z = sin(radians(self.yaw)) * cos(radians(self.pitch))
+
+            self.cameraFront = glm.normalize(direction)
+            self.cameraRight = glm.normalize(
+                glm.cross(self.cameraFront, glm.vec3(0.0, 1.0, 0.0)))
+            self.cameraUp = glm.normalize(
+                glm.cross(self.cameraRight, self.cameraFront))
 
     def keyhandler(self, speed_m=1.0):
         self.cameraSpeed = 2.5 * speed_m
@@ -133,17 +136,17 @@ class Camera:
             if glfwGetKey(self.window, GLFW_KEY_ESCAPE) == GLFW_PRESS:  # ESC
                 g.set_window_should_close(self.window, True)
 
-            if glfwGetKey(self.window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS:  # ESC
-                self.i += 1
+            # if glfwGetKey(self.window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS:  # ESC
+            #     self.i += 1
 
-            if self.i > 5:
-                glfwSetInputMode(self.window, GLFW_CURSOR,
-                                 GLFW_CURSOR_NORMAL)
-                if self.i > 10:
-                    self.i = 0
-            else:
-                glfwSetInputMode(self.window, GLFW_CURSOR,
-                                 GLFW_CURSOR_DISABLED)
+            # if self.i > 5:
+            #     glfwSetInputMode(self.window, GLFW_CURSOR,
+            #                      GLFW_CURSOR_NORMAL)
+            #     if self.i > 10:
+            #         self.i = 0
+            # else:
+            #     glfwSetInputMode(self.window, GLFW_CURSOR,
+            #                      GLFW_CURSOR_DISABLED)
 
     def move(self, x, y, z):
         self.pos.x += x

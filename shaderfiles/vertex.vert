@@ -18,6 +18,7 @@ uniform mat4 projectionMatrix;
 uniform mat4 viewMatrix;
 
 uniform vec3 lightPos=vec3(0.,5.,0.);
+uniform float time=0.;
 
 void main(){
     vec4 worldPosition=modelMatrix*vec4(position,1.);

@@ -65,6 +65,7 @@ class Shader(ABC):
 
     def putDataInUniformLocation(self, location, data, dtype='f'):
         loc = glGetUniformLocation(self.shaderProgram, location)
+        print(f'{loc} => {location} with {data}')
         if dtype == 'f':
             if type(data) in [np.float32, float]:
                 eval(f'glUniform1f')(loc, data)
